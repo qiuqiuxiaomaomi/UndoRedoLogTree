@@ -68,4 +68,13 @@ undo log
     log segment。
 
       另外undo log 也会产生redo log。因为undo log也需要持久性保护。
+
+
+      innodb存储引擎对undo的管理采用段的方式。rollback segment称为回滚段，每个回滚段中
+    有1024个undo log segment。
+
+      在以前老版本，只支持1个rollback segment，这样就只能记录1024个undo log segment。
+    后来MySQL5.5可以支持128个rollback segment，即支持128*1024个undo操作，还可以通过
+    变量 innodb_undo_logs (5.6版本以前该变量是 innodb_rollback_segments )自定义多少
+    个rollback segment，默认值为128
 </pre>
