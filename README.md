@@ -44,6 +44,16 @@ redo log：
 redo log 和 undo log日志刷盘策略
 
      MySQL支持用户自定义在commit时如何将log buffer中的日志刷log file中。这种控制通过变量 innodb_flush_log_at_trx_commit 的值来决定。该变量有3种值：0、1、2，默认为1。
+
+     mysql> show global variables like "innodb_log%"
+     Variable_name          |           Value
+     innodb_log_buffer_size	            8388608
+     innodb_log_checksums	            ON
+     innodb_log_compressed_pages	    ON
+     innodb_log_file_size	            268435456
+     innodb_log_files_in_group	        2
+     innodb_log_group_home_dir	        ./
+     innodb_log_write_ahead_size	    8192
 </pre>
 
 <pre>
@@ -77,4 +87,12 @@ undo log
     后来MySQL5.5可以支持128个rollback segment，即支持128*1024个undo操作，还可以通过
     变量 innodb_undo_logs (5.6版本以前该变量是 innodb_rollback_segments )自定义多少
     个rollback segment，默认值为128
+
+    mysql> show variables like "%undo%"
+    Variable_name               value
+    innodb_max_undo_log_size	1073741824
+    innodb_undo_directory	./
+    innodb_undo_log_truncate	OFF
+    innodb_undo_logs	128
+    innodb_undo_tablespaces	0
 </pre>
