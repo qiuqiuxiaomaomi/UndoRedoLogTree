@@ -1,6 +1,28 @@
 # UndoRedoLogTree
 Mysql的undo, redo日志技术研究
 
+<pre>
+redo log是InnoDB存储引擎层的日志；
+binlog是Mysql Server层记录的日志；
+
+两者都是记录了某些操作的日志（不是全部日志），两者有重复，两者的格式不一样。
+
+1）
+  redo log是InnoDB存储引擎层的日志，又称重做日志文件，用于记录事务操作的变化，记录的是数据修改之后的值。
+     
+  binlog是属于mysql server层面的，属于逻辑日志，是以二进制形式记录的是这个操作语句的原始逻辑。       
+
+2）
+  redo log是循环写，日志空间固定
+  
+  binlog是追加写，不会覆盖，文件变大之后切换下一个文件
+
+3）
+  binlog作为主从复制，数据恢复使用
+ 
+  redo log作为异常宕机或者介质故障后的数据恢复使用
+
+</pre>
 
 <pre>
 InnoDB事务日志包括redo log和undo log。
