@@ -76,6 +76,28 @@ redo log 和 undo log日志刷盘策略
      innodb_log_files_in_group	        2
      innodb_log_group_home_dir	        ./
      innodb_log_write_ahead_size	    8192
+
+     innodb_flush_log_at_trx_commit 参数可以控制将 redo buffer 中的更新记录写入到日
+     志文件以及将日志文件数据刷新到磁盘的操作时机。通过调整这个参数，可以在性能和数据安全
+     之间做取舍。
+
+     0：在事务提交时，innodb 不会立即触发将缓存日志写到磁盘文件的操作，而是每秒触发一次
+        缓存日志回写磁盘操作，并调用系统函数 fsync 刷新 IO 缓存。这种方式效率最高，也最
+        不安全。
+     1：在每个事务提交时，innodb 立即将缓存中的 redo 日志回写到日志文件，并调用 fsync 
+        刷新 IO 缓存。
+     2：在每个事务提交时，innodb 立即将缓存中的 redo 日志回写到日志文件，但并不马上调
+        用 fsync 来刷新 IO 缓存，而是每秒只做一次磁盘IO 缓存刷新操作。只要操作系统不发生
+        崩溃，数据就不会丢失，这种方式是对性能和数据安全的折中，其性能和数据安全性介于其
+        他两种方式之间。
+
+     innodb_flush_log_at_trx_commit 参数的默认值是 1，即每个事务提交时都会从 
+     log buffer 写更新记录到日志文件，而且会实际刷新磁盘缓存，显然，这完全能满足事务的持
+     久化要求，是最安全的，但这样会有较大的性能损失。
+
+     在某些需要尽量提高性能，并且可以容忍在数据库崩溃时丢失小部分数据，那么通过将参
+     数 innodb_flush_log_at_trx_commit 设置成 0 或 2 都能明显减少日志同步 IO，加快事
+     务提交，从而改善性能。
 </pre>
 
 <pre>
@@ -117,4 +139,53 @@ undo log
     innodb_undo_log_truncate	OFF
     innodb_undo_logs	128
     innodb_undo_tablespaces	0
+</pre>
+
+<pre>
+调整 innodb_log_buffer_size
+
+    innodb_log_buffer_size 决定 innodb 重做日志缓存池的大小，默认是 8MB。对于可能产生
+    大量更新记录的大事务，增加 innodb_log_buffer_size 的大小，可以避免 innodb 在事务
+    提交前就执行不必要的日志写入磁盘操作。因此，对于会在一个事务中更新，插入或删除大量记录
+    的应用，可以通过增大 innodb_log_buffer_size 来减少日志写磁盘操作，提高事务处理性能。
+</pre>
+
+<pre>
+设置 log file size ，控制检查点
+
+      当一个日志文件写满后，innodb 会自动切换到另一个日志文件，但切换时会触发数据库检查
+      点(checkpoint),这将导致 innodb 缓存脏页的小批量刷新，会明显降低 innodb 的性能。
+
+      可以通过增大 log file size 避免一个日志文件过快的被写满，但如果日志文件设置的过
+      大，恢复时将需要更长的时间，同时也不便于管理，一般来说，平均每半个小时写满一个日志
+      文件比较合适。
+
+      可以通过下面的方式来计算 innodb 每小时产生的日志量并估算合适的 innodb_log_file_size 的值：
+            // 1. 计算 innodb 每分钟产生的日志量  
+			MySQL [(none)]> pager grep -i "log sequence number"
+			PAGER set to 'grep -i "log sequence number"'
+			
+			MySQL [(none)]> show engine innodb status\G select sleep(60);show engine innodb status\G
+			Log sequence number 1706853570
+			1 row in set (0.00 sec)
+			
+			1 row in set (1 min 0.00 sec)
+			
+			Log sequence number 1708635750
+			1 row in set (0.00 sec)
+			
+			MySQL [(none)]> nopager
+			PAGER set to stdout
+			
+			MySQL [(none)]> select round ((1708635750 - 1706853570) /1024/1024) as MB;
+			+------+
+			| MB   |
+			+------+
+			|    2 |
+			+------+
+			1 row in set (0.00 sec)
+
+       通过上述操作得到 innodb 每分钟产生的日志量是 2 MB。然后计算没半小时的日志量
+       半小时日志量 = 30 * 2MB = 60MB
+       这样，就可以得出 innodb_log_file_size 的大小至少应该是 60MB。
 </pre>
