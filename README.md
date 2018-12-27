@@ -189,3 +189,6 @@ undo log
        半小时日志量 = 30 * 2MB = 60MB
        这样，就可以得出 innodb_log_file_size 的大小至少应该是 60MB。
 </pre>
+
+![](https://i.imgur.com/BCb4xd5.png)
+
